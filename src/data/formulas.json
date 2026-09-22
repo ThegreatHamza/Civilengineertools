@@ -1,0 +1,15 @@
+{
+  "formulas": [
+    {
+      "category":"Structural",
+      "title":{"en":"Concrete volume of rectangular element","fr":"Volume du béton d'un élément rectangulaire"},
+      "formula":"V = L × W × H",
+      "variables":{"L":"Length","W":"Width","H":"Height"}
+    },
+    {
+      "category":"Materials",
+      "title":{"en":"Steel weight","fr":"Poids de l'acier"},
+      "formula":"Weight = Volume × Density"
+    }
+  ]
+}
