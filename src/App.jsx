@@ -1,18 +1,90 @@
-import React, {useState} from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
-const tools=[
- ['🏗️','Quantity Estimator','Building quantities, concrete, steel, bricks and materials'],
- ['🧮','Quick Calculators','Beam, column, slab and footing calculations'],
- ['📚','Formula Library','Civil engineering formulas and references'],
- ['🔄','Unit Converter','Engineering unit conversions'],
- ['📝','Site Notes','Offline project notes']
+const densitySteel = 7850;
+const t = {
+  EN: {
+    app:'Civil Engineer Tools', sub:'A fast, offline-friendly toolkit for daily engineering work', home:'Home', calculators:'Calculators', quantities:'Quantity Estimator', formulas:'Formulas', notes:'Notes', materials:'Materials', converter:'Converter', search:'Search tools…', open:'Open', calculate:'Calculate', reset:'Reset', save:'Save', saved:'Saved', back:'Back', result:'Result', formula:'Formula', noNotes:'No notes yet.', addNote:'Add a note', title:'Title', content:'Write your site note…', language:'Language', theme:'Theme', dark:'Dark', light:'Light', all:'All', structural:'Structural', masonry:'Masonry', earthwork:'Earthwork', steel:'Steel', utilities:'Utilities', length:'Length', width:'Width', height:'Height', thickness:'Thickness', depth:'Depth', diameter:'Diameter', bars:'Number of bars', wallArea:'Wall area', brickLength:'Brick length', brickHeight:'Brick height', mortar:'Mortar allowance', excavation:'Excavation', backfill:'Backfill', footing:'Footing', beam:'Beam', column:'Column', slab:'Slab', brick:'Brick / Block', steelWeight:'Steel weight', stair:'Stair', tile:'Tile', paint:'Paint', cement:'Cement', material:'Material', quantity:'Quantity', unit:'Unit', density:'Density', quick:'Quick calculators', recent:'Recent calculations', noRecent:'Your calculations will appear here.', project:'Project', projectName:'Project name', estimate:'Estimate', totalConcrete:'Total concrete', totalArea:'Total area', totalSteel:'Total steel', elements:'Elements', addElement:'Add element', remove:'Remove', export:'Export report', clear:'Clear', formulaLibrary:'Formula library', unitConverter:'Unit converter', notesSaved:'Note saved locally', estimateSaved:'Estimate saved locally', offline:'Offline-ready', online:'Online', footer:'Built for civil engineers • Metric-first • Local storage', calculateAll:'Calculate quantities', assumptions:'Basic geometric estimate only. Reinforcement and material factors should be verified against the project drawings and applicable code.'
+  },
+  FR: {
+    app:'Civil Engineer Tools', sub:'Boîte à outils rapide et utilisable hors ligne pour le travail quotidien', home:'Accueil', calculators:'Calculateurs', quantities:'Métré / Quantitatif', formulas:'Formules', notes:'Notes', materials:'Matériaux', converter:'Convertisseur', search:'Rechercher un outil…', open:'Ouvrir', calculate:'Calculer', reset:'Réinitialiser', save:'Enregistrer', saved:'Enregistré', back:'Retour', result:'Résultat', formula:'Formule', noNotes:'Aucune note.', addNote:'Ajouter une note', title:'Titre', content:'Écrire votre note de chantier…', language:'Langue', theme:'Thème', dark:'Sombre', light:'Clair', all:'Tous', structural:'Structure', masonry:'Maçonnerie', earthwork:'Terrassement', steel:'Acier', utilities:'Utilitaires', length:'Longueur', width:'Largeur', height:'Hauteur', thickness:'Épaisseur', depth:'Profondeur', diameter:'Diamètre', bars:'Nombre de barres', wallArea:'Surface du mur', brickLength:'Longueur brique', brickHeight:'Hauteur brique', mortar:'Marge mortier', excavation:'Excavation', backfill:'Remblai', footing:'Semelle', beam:'Poutre', column:'Poteau', slab:'Dalle', brick:'Brique / Bloc', steelWeight:'Poids acier', stair:'Escalier', tile:'Carrelage', paint:'Peinture', cement:'Ciment', material:'Matériau', quantity:'Quantité', unit:'Unité', density:'Densité', quick:'Calculateurs rapides', recent:'Calculs récents', noRecent:'Vos calculs apparaîtront ici.', project:'Projet', projectName:'Nom du projet', estimate:'Estimation', totalConcrete:'Béton total', totalArea:'Surface totale', totalSteel:'Acier total', elements:'Éléments', addElement:'Ajouter un élément', remove:'Supprimer', export:'Exporter le rapport', clear:'Effacer', formulaLibrary:'Bibliothèque de formules', unitConverter:'Convertisseur d’unités', notesSaved:'Note enregistrée localement', estimateSaved:'Quantitatif enregistré localement', offline:'Prêt hors ligne', online:'En ligne', footer:'Conçu pour les ingénieurs civils • Métrique • Stockage local', calculateAll:'Calculer les quantités', assumptions:'Estimation géométrique de base uniquement. Les armatures et coefficients de matériaux doivent être vérifiés avec les plans et normes applicables.'
+  }
+};
+
+const tools = [
+  ['beam','🏗️','Beam','Structural','m³','Concrete volume'],['column','🏢','Column','Structural','m³','Concrete volume'],['slab','▰','Slab','Structural','m³','Concrete volume'],['footing','⬟','Footing','Structural','m³','Concrete volume'],['stair','🪜','Stair','Structural','m³','Concrete volume'],['steel','🔩','Steel weight','Steel','kg','Rebar weight'],['brick','🧱','Brick / Block','Masonry','pcs','Wall masonry'],['tile','▦','Tile','Masonry','m²','Tile coverage'],['paint','🖌️','Paint','Masonry','L','Paint volume'],['excavation','⛏️','Excavation','Earthwork','m³','Earth volume'],['backfill','🚜','Backfill','Earthwork','m³','Backfill volume'],['converter','🔄','Unit Converter','Utilities','','Units'],['formulas','📚','Formula Library','Utilities','','References'],['notes','📝','Site Notes','Utilities','','Offline notes'],['materials','🧪','Materials','Utilities','','Material data']
 ];
 
-export default function App(){
- const [lang,setLang]=useState('EN');
- return <main>
-  <header><h1>Civil Engineer Tools</h1><button onClick={()=>setLang(lang==='EN'?'FR':'EN')}>{lang}</button></header>
-  <p>{lang==='EN'?'Professional mobile engineering toolkit':'Boîte à outils professionnelle pour ingénieurs civils'}</p>
-  <section>{tools.map(t=><article key={t[1]}><h2>{t[0]} {t[1]}</h2><p>{t[2]}</p><button>Open</button></article>)}</section>
- </main>
+const formulas = [
+ ['Concrete volume','V = L × W × H','Volume of rectangular beams, columns and footings','m³'],
+ ['Slab volume','V = L × W × t','Concrete volume for a rectangular slab','m³'],
+ ['Steel weight','W = ρ × πd²/4 × L × n','Rebar theoretical weight using steel density 7850 kg/m³','kg'],
+ ['Wall area','A = L × H − openings','Net wall area after openings','m²'],
+ ['Brick count','N = wall area / brick face area','Approximate masonry units before waste','pcs'],
+ ['Excavation','V = L × W × D','Rectangular excavation volume','m³'],
+ ['Percentage','P = part / total × 100','General quantity percentage','%'],
+ ['Density','ρ = mass / volume','Relationship between mass and volume','kg/m³']
+];
+const materials = [['Concrete','2400','kg/m³'],['Reinforcement steel','7850','kg/m³'],['Cement','1440','kg/m³'],['Sand','1600','kg/m³'],['Gravel','1500','kg/m³'],['Water','1000','kg/m³'],['Common brick','1800','kg/m³'],['Aluminium','2700','kg/m³']];
+
+function n(v){ return Number(v)||0 }
+function fmt(v){ return Number(v).toLocaleString(undefined,{maximumFractionDigits:3}) }
+function calc(tool, x){
+  const L=n(x.L), W=n(x.W), H=n(x.H), T=n(x.T), D=n(x.D), dia=n(x.dia), bars=n(x.bars);
+  if(tool==='beam'||tool==='column'||tool==='footing') return L*W*H;
+  if(tool==='slab') return L*W*T;
+  if(tool==='stair') return L*W*H;
+  if(tool==='excavation'||tool==='backfill') return L*W*D;
+  if(tool==='steel') return densitySteel*(Math.PI*Math.pow(dia/1000,2)/4)*L*bars;
+  if(tool==='brick') return Math.ceil((L*H)/(W*T)*(1+n(x.waste)/100));
+  if(tool==='tile') return L*W*(1+n(x.waste)/100);
+  if(tool==='paint') return L*H*n(x.coats)/(n(x.coverage)||10);
+  return 0;
 }
+function field(label,key,unit,value,set){ return <label className="field"><span>{label} <em>{unit}</em></span><input type="number" inputMode="decimal" min="0" step="any" value={value||''} onChange={e=>set(key,e.target.value)} placeholder="0"/></label> }
+
+function Calculator({id,lang,onBack}){
+ const T=t[lang], meta=tools.find(a=>a[0]===id); const [x,setX]=useState({}); const [result,setResult]=useState(null);
+ const set=(k,v)=>setX(a=>({...a,[k]:v}));
+ const run=()=>setResult(calc(id,x));
+ const reset=()=>{setX({});setResult(null)};
+ const isConcrete=['beam','column','footing','slab','stair'].includes(id);
+ return <div className="page"><button className="back" onClick={onBack}>← {T.back}</button><div className="tool-head"><div className="tool-icon">{meta[1]}</div><div><h2>{lang==='FR'?({beam:'Poutre',column:'Poteau',slab:'Dalle',footing:'Semelle',stair:'Escalier',steel:'Poids acier',brick:'Brique / Bloc',tile:'Carrelage',paint:'Peinture',excavation:'Excavation',backfill:'Remblai'}[id]||meta[2]):meta[2]}</h2><p>{meta[5]}</p></div></div><div className="form-card">
+ {isConcrete && <>{field(T.length,'L','m',x.L,set)}{field(T.width,'W','m',x.W,set)}{id==='slab'?field(T.thickness,'T','m',x.T,set):field(T.height,'H','m',x.H,set)}</>}
+ {id==='steel' && <>{field(T.length,'L','m',x.L,set)}{field(T.diameter,'dia','mm',x.dia,set)}{field(T.bars,'bars','',x.bars,set)}</>}
+ {id==='brick' && <>{field(T.length,'L','m',x.L,set)}{field(T.height,'H','m',x.H,set)}{field(T.brickLength,'W','m',x.W,set)}{field(T.brickHeight,'T','m',x.T,set)}{field('Waste','waste','%',x.waste,set)}</>}
+ {id==='tile' && <>{field(T.length,'L','m',x.L,set)}{field(T.width,'W','m',x.W,set)}{field('Waste','waste','%',x.waste,set)}</>}
+ {id==='paint' && <>{field(T.length,'L','m',x.L,set)}{field(T.height,'H','m',x.H,set)}{field('Coats','coats','',x.coats||1,set)}{field('Coverage','coverage','m²/L',x.coverage||10,set)}</>}
+ {(id==='excavation'||id==='backfill') && <>{field(T.length,'L','m',x.L,set)}{field(T.width,'W','m',x.W,set)}{field(T.depth,'D','m',x.D,set)}</>}
+ <div className="actions"><button className="primary" onClick={run}>{T.calculate}</button><button onClick={reset}>{T.reset}</button></div></div>
+ {result!==null&&<div className="result"><small>{T.result}</small><strong>{fmt(result)} {meta[4]}</strong><p>{id==='steel'?T.formula+': 7850 × π × d²/4 × L × n':id==='brick'?'Wall area ÷ brick face area + waste':isConcrete?'V = L × W × H':id==='tile'?'A = L × W + waste':id==='paint'?'Paint = area × coats ÷ coverage':'V = L × W × D'}</p></div>}
+ <p className="assumption">{T.assumptions}</p></div>
+}
+
+function QuantityEstimator({lang,onBack}){
+ const T=t[lang]; const [project,setProject]=useState(localStorage.getItem('ce_project')||'My project'); const [rows,setRows]=useState([{type:'beam',name:'Beam B1',L:'5',W:'.25',H:'.5',qty:'4'},{type:'column',name:'Column C1',L:'.3',W:'.3',H:'3',qty:'8'},{type:'slab',name:'Slab S1',L:'10',W:'8',H:'.15',qty:'1'}]);
+ const total=rows.reduce((s,r)=>s+calc(r.type,{L:r.L,W:r.W,H:r.H,T:r.H})*n(r.qty),0);
+ const add=()=>setRows(r=>[...r,{type:'beam',name:'New element',L:'',W:'',H:'',qty:'1'}]);
+ const update=(i,k,v)=>setRows(r=>r.map((a,j)=>j===i?{...a,[k]:v}:a));
+ const exportReport=()=>{const csv=['Civil Engineer Tools - Quantity Estimate',`Project,${project}`,'Element,Type,L,W,H,Qty,Concrete m3',...rows.map(r=>`${r.name},${r.type},${r.L},${r.W},${r.H},${r.qty},${(calc(r.type,{L:r.L,W:r.W,H:r.H,T:r.H})*n(r.qty)).toFixed(3)}`),`TOTAL,,,,,,${total.toFixed(3)}`].join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='quantity-estimate.csv';a.click();};
+ return <div className="page"><button className="back" onClick={onBack}>← {T.back}</button><h2>🏗️ {T.quantities}</h2><p>{T.assumptions}</p><input className="project" value={project} onChange={e=>{setProject(e.target.value);localStorage.setItem('ce_project',e.target.value)}} placeholder={T.projectName}/><div className="estimate-table">{rows.map((r,i)=><div className="estimate-row" key={i}><input value={r.name} onChange={e=>update(i,'name',e.target.value)}/><select value={r.type} onChange={e=>update(i,'type',e.target.value)}><option value="beam">Beam</option><option value="column">Column</option><option value="slab">Slab</option><option value="footing">Footing</option></select><input type="number" placeholder="L" value={r.L} onChange={e=>update(i,'L',e.target.value)}/><input type="number" placeholder="W" value={r.W} onChange={e=>update(i,'W',e.target.value)}/><input type="number" placeholder="H/t" value={r.H} onChange={e=>update(i,'H',e.target.value)}/><input type="number" placeholder="Qty" value={r.qty} onChange={e=>update(i,'qty',e.target.value)}/><b>{fmt(calc(r.type,{L:r.L,W:r.W,H:r.H,T:r.H})*n(r.qty))} m³</b><button onClick={()=>setRows(a=>a.filter((_,j)=>j!==i))}>×</button></div>)}</div><div className="actions"><button onClick={add}>＋ {T.addElement}</button><button className="primary" onClick={exportReport}>{T.export}</button></div><div className="summary"><div><span>{T.elements}</span><strong>{rows.length}</strong></div><div><span>{T.totalConcrete}</span><strong>{fmt(total)} m³</strong></div></div></div>
+}
+
+function Notes({lang}){const T=t[lang];const [notes,setNotes]=useState(()=>JSON.parse(localStorage.getItem('ce_notes')||'[]'));const [title,setTitle]=useState('');const [content,setContent]=useState('');const save=()=>{if(!content.trim())return;const next=[{title:title||T.addNote,content,date:new Date().toLocaleString()},...notes];setNotes(next);localStorage.setItem('ce_notes',JSON.stringify(next));setTitle('');setContent('')};return <div className="page"><h2>📝 {T.notes}</h2><input className="project" value={title} onChange={e=>setTitle(e.target.value)} placeholder={T.title}/><textarea value={content} onChange={e=>setContent(e.target.value)} placeholder={T.content}/><button className="primary wide" onClick={save}>{T.save}</button><div className="notes">{notes.length?notes.map((a,i)=><article key={i}><h3>{a.title}</h3><small>{a.date}</small><p>{a.content}</p><button onClick={()=>{const n=notes.filter((_,j)=>j!==i);setNotes(n);localStorage.setItem('ce_notes',JSON.stringify(n))}}>×</button></article>):<p>{T.noNotes}</p>}</div></div>}
+
+function Converter({lang}){const T=t[lang];const [kind,setKind]=useState('length');const [value,setValue]=useState('1');const [unit,setUnit]=useState('m');const maps={length:{m:1,mm:.001,cm:.01,ft:.3048,in:.0254},area:{'m²':1,'cm²':.0001,'ft²':.092903},volume:{'m³':1,L:.001,'ft³':.0283168},mass:{kg:1,ton:1000,lb:.453592},pressure:{MPa:1,kPa:.001,Pa:.000001},force:{kN:1,N:.001,tonf:9.80665}};const base=n(value)*(maps[kind][unit]||1);return <div className="page"><h2>🔄 {T.converter}</h2><select value={kind} onChange={e=>{setKind(e.target.value);setUnit(Object.keys(maps[e.target.value])[0])}}><option value="length">Length</option><option value="area">Area</option><option value="volume">Volume</option><option value="mass">Mass</option><option value="pressure">Pressure</option><option value="force">Force</option></select><div className="converter"><input type="number" value={value} onChange={e=>setValue(e.target.value)}/><select value={unit} onChange={e=>setUnit(e.target.value)}>{Object.keys(maps[kind]).map(u=><option key={u}>{u}</option>)}</select></div><div className="conversion-list">{Object.entries(maps[kind]).map(([u,f])=><div key={u}><b>{fmt(base/f)}</b> {u}</div>)}</div></div>}
+
+function Library({lang}){const T=t[lang];return <div className="page"><h2>📚 {T.formulaLibrary}</h2><input className="project" placeholder={T.search}/><div className="formula-grid">{formulas.map((f,i)=><article key={i}><span>{f[3]}</span><h3>{f[0]}</h3><strong>{f[1]}</strong><p>{f[2]}</p></article>)}</div><h2>🧪 {T.materials}</h2><div className="material-grid">{materials.map(m=><div key={m[0]}><b>{m[0]}</b><span>{m[1]} {m[2]}</span></div>)}</div></div>}
+
+export default function App(){
+ const [lang,setLang]=useState(localStorage.getItem('ce_lang')||'EN'); const T=t[lang]; const [dark,setDark]=useState(localStorage.getItem('ce_dark')==='1'); const [view,setView]=useState('home'); const [calcId,setCalcId]=useState(null); const [query,setQuery]=useState(''); const [filter,setFilter]=useState('All');
+ useEffect(()=>{localStorage.setItem('ce_lang',lang);document.documentElement.lang=lang==='FR'?'fr':'en'},[lang]);useEffect(()=>{localStorage.setItem('ce_dark',dark?'1':'0');document.body.classList.toggle('dark',dark)},[dark]);
+ const open=(id)=>{if(id==='converter'||id==='formulas'||id==='notes'||id==='materials'){setView(id);setCalcId(null)}else if(id==='quantity'){setView('quantity');setCalcId(null)}else{setCalcId(id);setView('calc')}};
+ const visible=useMemo(()=>tools.filter(a=>(filter==='All'||a[3]===filter)&&`${a[2]} ${a[5]}`.toLowerCase().includes(query.toLowerCase())),[filter,query]);
+ if(view==='calc'&&calcId)return <Shell T={T} lang={lang} setLang={setLang} dark={dark} setDark={setDark} view={view} setView={setView}><Calculator id={calcId} lang={lang} onBack={()=>setView('home')}/></Shell>;
+ if(view==='quantity')return <Shell T={T} lang={lang} setLang={setLang} dark={dark} setDark={setDark} view={view} setView={setView}><QuantityEstimator lang={lang} onBack={()=>setView('home')}/></Shell>;
+ if(view==='notes')return <Shell T={T} lang={lang} setLang={setLang} dark={dark} setDark={setDark} view={view} setView={setView}><Notes lang={lang}/></Shell>;
+ if(view==='converter')return <Shell T={T} lang={lang} setLang={setLang} dark={dark} setDark={setDark} view={view} setView={setView}><Converter lang={lang}/></Shell>;
+ if(view==='formulas'||view==='materials')return <Shell T={T} lang={lang} setLang={setLang} dark={dark} setDark={setDark} view={view} setView={setView}><Library lang={lang}/></Shell>;
+ return <Shell T={T} lang={lang} setLang={setLang} dark={dark} setDark={setDark} view={view} setView={setView}><div className="hero"><div><div className="eyebrow">{T.offline} • {navigator.onLine?T.online:T.offline}</div><h1>{T.app}</h1><p>{T.sub}</p></div><div className="hero-mark">CE</div></div><button className="estimator" onClick={()=>open('quantity')}><div><small>🏗️ {T.estimate}</small><strong>{T.quantities}</strong><span>Concrete • steel • masonry • earthwork</span></div><b>→</b></button><div className="toolbar"><input value={query} onChange={e=>setQuery(e.target.value)} placeholder={T.search}/><div className="filters">{['All','Structural','Masonry','Earthwork','Steel','Utilities'].map(x=><button className={filter===x?'active':''} onClick={()=>setFilter(x)} key={x}>{x==='All'?T.all:x==='Structural'?T.structural:x==='Masonry'?T.masonry:x==='Earthwork'?T.earthwork:x==='Steel'?T.steel:T.utilities}</button>)}</div></div><h2>{T.quick}</h2><div className="tool-grid">{visible.map(a=><button className="tool-card" key={a[0]} onClick={()=>open(a[0])}><span className="tool-icon">{a[1]}</span><div><strong>{a[2]}</strong><small>{a[5]}</small></div><b>›</b></button>)}</div></Shell>}
+
+function Shell({children,T,lang,setLang,dark,setDark,setView}){return <div className="app"><header className="top"><button className="brand" onClick={()=>setView('home')}><span>CE</span><b>{T.app}</b></button><div className="top-actions"><button onClick={()=>setLang(lang==='EN'?'FR':'EN')}>{lang==='EN'?'FR':'EN'}</button><button onClick={()=>setDark(!dark)}>{dark?'☀️':'🌙'}</button></div></header><main>{children}</main><nav className="bottom"><button className="active" onClick={()=>setView('home')}>⌂<span>{T.home}</span></button><button onClick={()=>setView('quantity')}>🏗<span>{T.quantities}</span></button><button onClick={()=>setView('converter')}>🔄<span>{T.converter}</span></button><button onClick={()=>setView('notes')}>📝<span>{T.notes}</span></button></nav><footer>{T.footer}</footer></div>}
