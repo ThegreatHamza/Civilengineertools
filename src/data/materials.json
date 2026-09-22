@@ -1,0 +1,8 @@
+{
+  "materials": [
+    {"name": {"en":"Concrete","fr":"Béton"}, "density": 2400, "unit":"kg/m3"},
+    {"name": {"en":"Steel","fr":"Acier"}, "density": 7850, "unit":"kg/m3"},
+    {"name": {"en":"Sand","fr":"Sable"}, "density": 1600, "unit":"kg/m3"},
+    {"name": {"en":"Cement","fr":"Ciment"}, "density": 1440, "unit":"kg/m3"}
+  ]
+}
